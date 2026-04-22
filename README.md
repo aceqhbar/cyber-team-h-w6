@@ -1,95 +1,129 @@
 # 📄 Cyber Team HW6
 
-В данном домашнем задании выполнены задачи по работе с хэшами, подбору паролей, атаке с солью, использованию аналогов радужных таблиц и настройке HTTPS-сервиса.
+В данном домашнем задании выполнены задачи по работе с хэшами, подбору PIN-кодов, атаке с солью, работе с MD5 и настройке HTTPS.
 
-## Задание 1 – Базовая работа с хэшами  
-Даны хэши, необходимо определить их тип и восстановить пароли. Сначала определяется длина хэша, затем подбирается формат (например MD5 или SHA256), после чего используется словарь rockyou.txt.  
+---
+
+## 🔹 Задание 1 – Определение типа хэша и взлом
+
+Сначала был определён тип хэшей по длине и формату. Выполнялись попытки с разными алгоритмами (SHA256, SHA512), после чего был выбран корректный формат.
 
 Команды:
 john hashes_john.txt --wordlist=rockyou.txt  
 john --show hashes_john.txt  
 
-Результат: пароли успешно восстановлены.  
+Процесс подбора и проверки формата:
 
-![task1](images/task1.png)
-
-## Задание 2 – Работа с PIN-кодами  
-Необходимо было подобрать значения из файла pins.txt. Использовался перебор по словарю.  
-
-Команда:
-john pins.txt --wordlist=pins.txt  
-
-Результат: PIN-коды найдены.  
-
-![task2](images/task2.png)
-
-## Задание 3 – Атака с солью (Salted hashes)  
-Формат входных данных: login:salt:hash. Важно учитывать порядок: либо пароль+соль, либо соль+пароль.  
-
-Использовались форматы dynamic_61 и dynamic_62.  
-
-Команды:
-john --format=dynamic_62 --wordlist=rockyou.txt salted.txt  
-john --show salted.txt  
+![john-hash](images/john-hash.png)
+![johnformat](images/johnformat.png)
+![trysha256](images/trysha256.png)
+![trysha256v2](images/trysha256v2.png)
+![testssh256](images/testssh256.png)
+![512ssh](images/512ssh .png)
+![ssh512](images/ssh512|5|6.png)
 
 Результат:
-web_admin → 656800  
-root → rubenkus  
-user → 54cami9  
-admin → 428248h  
 
-![task3](images/salted.png)
+![johnshowres](images/johnshowres.png)
 
-## Задание 4 – Взлом MD5 (аналог rainbow tables)  
-Сначала проверена длина хэшей:  
+---
 
-Команда:
-awk '{print length, $0}' rainbow.txt  
+## 🔹 Задание 2 – PIN-коды (mask attack)
 
-Длина = 32 → это MD5.  
-
-Далее использован словарь rockyou.txt.  
+Был выполнен перебор PIN-кодов с использованием масок.
 
 Команды:
-john --format=Raw-MD5 --wordlist=rockyou.txt rainbow.txt  
-john --show rainbow.txt  
+john --format=Raw-SHA512 --mask=?d?d?d?d pins.txt  
+john --format=Raw-SHA512 --mask=?d?d?d?d?d pins.txt  
+john --format=Raw-SHA512 --mask=?d?d?d?d?d?d pins.txt  
 
-Результат: пароли успешно найдены.  
+Также выполнялась проверка длины:
 
-![task4_1](images/md5resultrainbow.png)  
-![task4_2](images/ranbowsortcount.png)
+![countlength](images/countlenght.png)
 
-## Задание 5 – Поднятие HTTPS-сервиса без ошибок  
+Редактирование и подготовка:
 
-1. Генерация сертификата:
-openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes  
+![sortedpins](images/sortedpinsnano.png)
 
-2. Настройка nginx:
-sudo nano /etc/nginx/sites-available/default  
+В процессе были обнаружены ошибки в хэшах:
 
-Добавлено:
-listen 443 ssl;  
-ssl_certificate /home/kali2/certs/cert.pem;  
-ssl_certificate_key /home/kali2/certs/key.pem;  
+![brokenhash](images/brokenhash512.png)
+![brokenhashL](images/brokenhasherror"l".png)
+![fix0](images/findfix0.png)
 
-3. Проверка конфигурации:
-sudo nginx -t  
-sudo systemctl restart nginx  
+Результаты перебора:
 
-4. Первая проверка:
-curl https://localhost  
-(ошибка self-signed certificate — ожидаемо)  
+![johnshow512](images/johnshow512results.png)
+![finalresult](images/finalresult5.png)
 
-5. Добавление сертификата в доверенные:
+Вывод: найдено 4 PIN-кода, один не найден после полного перебора диапазона.
+
+---
+
+## 🔹 Задание 3 – Salted Hashes
+
+Формат входных данных:
+login:salt:hash  
+
+Использовались форматы:
+
+dynamic_61 → sha256(password + salt)  
+dynamic_62 → sha256(salt + password)  
+
+Выполнялись попытки с обоими форматами:
+
+![61try](images/61trysalt.png)
+![62try](images/62trysalted.png)
+
+Итоговые результаты:
+
+![61result](images/61result.png)
+![62result](images/62result.png)
+
+Вывод: корректный формат определён, пароли успешно восстановлены.
+
+---
+
+## 🔹 Задание 4 – MD5 (словарная атака)
+
+Тип хэша определён по длине:
+
+awk '{print length, $0}' rainbow.txt  
+
+Длина = 32 → MD5  
+
+Использован словарь rockyou.txt.
+
+Результаты:
+
+![rainbowcount](images/ranbowsortcount.png)
+![rainbowresult](images/md5resultrainbow.png)
+
+Вывод: пароли успешно восстановлены.
+
+---
+
+## 🔹 Задание 5 – HTTPS без ошибок
+
+Был настроен HTTPS-сервер с самоподписанным сертификатом.
+
+Создание сертификата:
+
+![setupcert](images/setupcerts.png)
+
+Первичная ошибка (ожидаемо):
+
+![brokenhttps](images/broken639.png)
+
+После добавления сертификата в доверенные:
+
 sudo cp ~/certs/cert.pem /usr/local/share/ca-certificates/localhost.crt  
 sudo update-ca-certificates  
 
-6. Финальная проверка:
-sudo systemctl restart nginx  
-curl https://localhost  
+Финальный результат:
 
-Результат:
-HTTPS works  
+![httpsok](images/resultcertshttpsworks.png)
 
-![task5](images/https.png)
+Вывод: HTTPS работает без ошибок SSL.
 
+---
