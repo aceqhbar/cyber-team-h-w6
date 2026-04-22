@@ -111,9 +111,7 @@ awk '{print length, $0}' rainbow.txt
 
 ![setupcert](images/setupcerts.png)
 
-Первичная ошибка (ожидаемо):
 
-![brokenhttps](images/broken639.png)
 
 После добавления сертификата в доверенные:
 
